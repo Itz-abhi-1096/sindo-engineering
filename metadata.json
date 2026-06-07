@@ -1,0 +1,6 @@
+{
+  "name": "Sindo Engineering",
+  "description": "Premium manufacturer & supplier of stainless steel pipe fittings (Tees, Elbows, Bends, Reducers, Flanges, and Custom Fittings).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -14,6 +14,23 @@ async function startServer() {
   // JSON request body parser
   app.use(express.json());
 
+  // Enable CORS middleware for robust cross-origin requests
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  // Verbose Request Logger Middleware
+  app.use((req, res, next) => {
+    console.log(`[API Request Log] Method: ${req.method} | URL: ${req.url} | Origin: ${req.headers.origin || "Same Origin"}`);
+    next();
+  });
+
   // API Route - Direct RFQ Email Dispatcher
   app.post("/api/send-rfq", async (req, res) => {
     try {
@@ -160,6 +177,7 @@ Sindo Engineering Automated System
       console.log(`[RFQ Received] ID: ${rfqId} from ${contactName} (${email})`);
 
       if (smtpHost && smtpUser && smtpPass) {
+        console.log(`[SMTP Settings] Attempting direct send to ${emailTo} from ${emailFrom} using ${smtpHost}:${smtpPort}`);
         // Build transporter (lazy-initialization)
         const transporter = nodemailer.createTransport({
           host: smtpHost,
@@ -169,6 +187,9 @@ Sindo Engineering Automated System
             user: smtpUser,
             pass: smtpPass,
           },
+          tls: {
+            rejectUnauthorized: false
+          }
         });
 
         // Send email to company & CC customer

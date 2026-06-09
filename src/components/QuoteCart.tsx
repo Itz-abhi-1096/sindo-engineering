@@ -38,9 +38,7 @@ export default function QuoteCart({
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{
     success: boolean;
-    mode?: 'direct' | 'simulation';
     message?: string;
-    warning?: string;
     error?: string;
   } | null>(null);
 
@@ -88,39 +86,6 @@ Please review these specifications and send your official quotation to my email 
 Best regards,
 ${req.contactName}
 ${req.companyName ? req.companyName : ''}`;
-  };
-
-  const generateMailtoLink = (req: QuoteRequest) => {
-    const subject = encodeURIComponent(`[RFQ Inquiry] ${req.id} - ${req.companyName || req.contactName}`);
-    
-    const itemsSummaryList = req.items.map((item, idx) => {
-      return `• ${item.product.name} [Size: ${item.selectedSize}, Grade: ${item.selectedGrade}, Qty: ${item.quantity}pcs]`;
-    }).join('\n');
-
-    const bodyText = `Dear Sindo Engineering Sales Team,
-
-You have received a new commercial price inquiry for Stainless Steel Fittings:
-
---- RFQ SUMMARY ---
-RFQ Reference ID: ${req.id}
-Contact Person: ${req.contactName}
-Company Name: ${req.companyName || 'Not Provided (Direct/Retail)'}
-Direct Phone: ${req.phone}
-Registered Email: ${req.email}
-Industry Sector: ${req.industry || 'General'}
-
---- SPECIFICATIONS LIST ---
-${itemsSummaryList}
-
-${req.message ? `--- CUSTOM REQUIREMENTS & SIZING NOTES ---\n"${req.message}"\n` : ''}
----
-Please review these specifications and reply to my email address (${req.email}) with your official price quote.
-
-Best regards,
-${req.contactName}`;
-
-    const body = encodeURIComponent(bodyText);
-    return `mailto:sindoengineering@gmail.com?subject=${subject}&body=${body}`;
   };
 
   const handleCopyToClipboard = (req: QuoteRequest) => {
@@ -172,8 +137,7 @@ ${req.contactName}`;
     };
 
     try {
-      // Send real direct API POST to Express backend
-      let response;
+      // Send real direct API POST to Express backend / serverless function
       const payload = {
         rfqId: newRequest.id,
         contactName: newRequest.contactName,
@@ -186,39 +150,16 @@ ${req.contactName}`;
         createdAt: newRequest.createdAt
       };
 
-      try {
-        console.log("dispatching RFQ payload to primary endpoint: /api/send-rfq");
-        response = await fetch('/api/send-rfq', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        // If the server returns a 404 client error, try the alternative non-api route immediately
-        if (response.status === 404) {
-          console.warn('/api/send-rfq returned 404. Dual-routing fallback initiated. Trying /send-rfq path...');
-          response = await fetch('/send-rfq', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-        }
-      } catch (fetchErr) {
-        console.warn('/api/send-rfq connection error. Trying fallback /send-rfq path directly...', fetchErr);
-        response = await fetch('/send-rfq', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-      }
-
-      if (response && response.ok) {
+      console.log("dispatching RFQ payload to primary endpoint: /api/send-rfq");
+      const response = await fetch('/api/send-rfq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setSendResult(data);
@@ -233,31 +174,19 @@ ${req.contactName}`;
           setSelectedIndustry('');
           setMessage('');
         } else {
-          throw new Error(data.error || 'Server error');
+          throw new Error(data.error || 'Server failed to dispatch quotation mail.');
         }
       } else {
-        throw new Error(`Server returned HTTP ${response ? response.status : 'No Response'}`);
+        let errMessage = `Server error (HTTP ${response.status})`;
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) errMessage = errData.error;
+        } catch (_) {}
+        throw new Error(errMessage);
       }
     } catch (err: any) {
-      console.warn('Backend API request could not be processed. Falling back gracefully to simulation/client copy mode:', err);
-      
-      const simulatedData = {
-        success: true,
-        mode: 'simulation' as const,
-        message: 'The inquiry was logged in client memory. You can manually copy the quote or open your email client below to submit it.'
-      };
-      
-      setSendResult(simulatedData);
-      onSubmitQuote(newRequest);
-      setSubmittedRequest(newRequest);
-      
-      // Clear form fields
-      setContactName('');
-      setCompanyName('');
-      setPhone('');
-      setEmail('');
-      setSelectedIndustry('');
-      setMessage('');
+      console.error('Core API transmission failed:', err);
+      setFormError(`Transmission Failed: ${err.message || 'Unknown network router error.'}`);
     } finally {
       setIsSending(false);
     }
@@ -307,29 +236,15 @@ ${req.contactName}`;
                 </div>
 
                 {/* Direct Delivery Notice */}
-                {sendResult && sendResult.mode === 'direct' ? (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex gap-3 text-emerald-800 text-xs text-left">
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 animate-pulse mt-0.5" />
-                    <div>
-                      <strong className="block font-bold text-emerald-950">✓ Direct Email Dispatched!</strong>
-                      <p className="text-emerald-700/90 mt-1 leading-normal">
-                        Your detailed RFQ was emailed directly to <strong className="text-slate-900">sindoengineering@gmail.com</strong>. A verification copy was also carbon-copied (CC'd) to your inbox at <strong className="text-slate-900">{submittedRequest.email}</strong>.
-                      </p>
-                    </div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex gap-3 text-emerald-800 text-xs text-left">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 animate-pulse mt-0.5" />
+                  <div>
+                    <strong className="block font-bold text-emerald-950">✓ Direct Email Dispatched!</strong>
+                    <p className="text-emerald-700/90 mt-1 leading-normal">
+                      Your detailed RFQ has been emailed directly to the Sindo engineering sales desk (<strong className="text-slate-900">sindoengineering@gmail.com</strong>). A verification invoice has also been sent as a carbon-copy (CC) reference directly to <strong className="text-slate-900">{submittedRequest.email}</strong>.
+                    </p>
                   </div>
-                ) : (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3 text-blue-800 text-xs text-left">
-                    <div className="bg-blue-100 text-blue-800 p-1 rounded-lg shrink-0 w-6 h-6 flex items-center justify-center font-bold text-xs">
-                      i
-                    </div>
-                    <div>
-                      <strong className="block font-bold text-blue-950">✓ RFQ Specification Compiled!</strong>
-                      <p className="text-blue-700/90 mt-1 leading-normal">
-                        Your RFQ has been generated successfully. Please use the options below to **Send via Email Client** or **Copy RFQ to Clipboard** to submit your specifications directly to Sindo Engineering.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 {/* Printable Document Box */}
                 <div className="border border-slate-300 rounded-xl bg-slate-50/50 p-6 shadow-sm border-dashed relative overflow-hidden font-mono text-xs text-slate-800">
@@ -422,63 +337,43 @@ ${req.contactName}`;
                   </div>
                 </div>
 
-                {/* Active Email Action Panel */}
-                <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 space-y-3 font-sans">
-                  <div className="flex gap-2.5 items-start">
-                    <div className="bg-blue-600 text-white p-2 rounded-lg mt-0.5 shadow-sm">
-                      <Mail className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">How to submit your quotation?</h4>
-                      <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                        To guarantee we receive your quotation right away, please choose one of the options below to email your generated RFQ to Sindo Engineering:
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                    <a
-                      href={generateMailtoLink(submittedRequest)}
-                      className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-lg text-xs uppercase tracking-wider transition-all shadow-sm text-center cursor-pointer"
-                    >
-                      <Mail className="w-3.5 h-3.5" /> Send via Email Client
-                    </a>
-                    <button
-                      onClick={() => handleCopyToClipboard(submittedRequest)}
-                      className={`flex items-center justify-center gap-1.5 font-bold py-2.5 px-3 rounded-lg text-xs uppercase tracking-wider transition-all border text-center cursor-pointer ${
-                        copied
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                      }`}
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" /> Copied RFQ Text!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5 text-slate-500" /> Copy RFQ to Clipboard
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
+                {/* Practical actions after email submission */}
+                <div className="flex gap-3 pt-2 font-sans">
+                  <button
+                    onClick={() => handleCopyToClipboard(submittedRequest)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all border text-center cursor-pointer ${
+                      copied
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Copied RFQ!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-500" /> Copy to Clipboard
+                      </>
+                    )}
+                  </button>
                   <button
                     onClick={() => {
                       window.print();
                     }}
                     className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all border border-slate-300 text-center cursor-pointer"
                   >
-                    Print Quote Details
+                    Print Details
                   </button>
+                </div>
+
+                <div className="pt-1">
                   <button
                     onClick={() => {
                       setSubmittedRequest(null);
                       onClose();
                     }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all text-center cursor-pointer"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all text-center cursor-pointer"
                   >
                     Done & Return to Catalog
                   </button>

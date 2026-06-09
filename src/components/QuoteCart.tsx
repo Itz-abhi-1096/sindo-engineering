@@ -35,6 +35,14 @@ export default function QuoteCart({
   // Submitted RFQ Document layout state
   const [submittedRequest, setSubmittedRequest] = useState<QuoteRequest | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{
+    success: boolean;
+    mode?: 'direct' | 'simulation';
+    message?: string;
+    warning?: string;
+    error?: string;
+  } | null>(null);
 
   if (!isOpen) return null;
 
@@ -98,17 +106,20 @@ ${req.companyName ? req.companyName : ''}`;
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    setIsSending(true);
 
     if (cartItems.length === 0) {
       setFormError('Your RFQ Cart is empty. Add fittings from the catalog first!');
+      setIsSending(false);
       return;
     }
 
     if (!contactName.trim() || !phone.trim() || !email.trim()) {
       setFormError('Please fill in all mandatory field highlights (Name, Phone, and Email).');
+      setIsSending(false);
       return;
     }
 
@@ -133,16 +144,49 @@ ${req.companyName ? req.companyName : ''}`;
       })
     };
 
-    onSubmitQuote(newRequest);
-    setSubmittedRequest(newRequest);
-    
-    // Clear form fields
-    setContactName('');
-    setCompanyName('');
-    setPhone('');
-    setEmail('');
-    setSelectedIndustry('');
-    setMessage('');
+    try {
+      // Send real direct API POST to Express backend
+      const response = await fetch('/api/send-rfq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rfqId: newRequest.id,
+          contactName: newRequest.contactName,
+          companyName: newRequest.companyName,
+          phone: newRequest.phone,
+          email: newRequest.email,
+          industry: newRequest.industry,
+          items: newRequest.items,
+          message: newRequest.message,
+          createdAt: newRequest.createdAt
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSendResult(data);
+        onSubmitQuote(newRequest);
+        setSubmittedRequest(newRequest);
+        
+        // Clear form fields
+        setContactName('');
+        setCompanyName('');
+        setPhone('');
+        setEmail('');
+        setSelectedIndustry('');
+        setMessage('');
+      } else {
+        setFormError(data.error || 'Server rejected the RFQ delivery. Please check specifications and try again.');
+      }
+    } catch (err: any) {
+      console.error('API submission error:', err);
+      setFormError('Failed to communicate with Sindo API dispatch service. Check connection and retry.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -187,6 +231,31 @@ ${req.companyName ? req.companyName : ''}`;
                     Your RFQ reference has been generated. Our engineering sales team at <span className="font-semibold text-slate-900">Sindo Engineering</span> will review the parameters and email your quotation within 2 to 4 hours.
                   </p>
                 </div>
+
+                {/* Direct Delivery Notice */}
+                {sendResult && sendResult.mode === 'direct' ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex gap-3 text-emerald-800 text-xs text-left">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 animate-pulse mt-0.5" />
+                    <div>
+                      <strong className="block font-bold text-emerald-950">✓ Direct Email Dispatched!</strong>
+                      <p className="text-emerald-700/90 mt-1 leading-normal">
+                        Your detailed RFQ was emailed directly to <strong className="text-slate-900">sindoengineering@gmail.com</strong>. A verification copy was also carbon-copied (CC'd) to your inbox at <strong className="text-slate-900">{submittedRequest.email}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3 text-blue-800 text-xs text-left">
+                    <div className="bg-blue-100 text-blue-800 p-1 rounded-lg shrink-0 w-6 h-6 flex items-center justify-center font-bold text-xs">
+                      i
+                    </div>
+                    <div>
+                      <strong className="block font-bold text-blue-950">✓ System Intake Logged!</strong>
+                      <p className="text-blue-700/90 mt-1 leading-normal">
+                        The inquiry has been stored. You can use the buttons below to copy the plain-text sheet or open your local email writer. To configure auto-dispatch, add SMTP parameters to your environment variables.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Printable Document Box */}
                 <div className="border border-slate-300 rounded-xl bg-slate-50/50 p-6 shadow-sm border-dashed relative overflow-hidden font-mono text-xs text-slate-800">
@@ -535,10 +604,10 @@ ${req.companyName ? req.companyName : ''}`;
                     {/* Submit commercial quote request */}
                     <button
                       type="submit"
-                      disabled={cartItems.length === 0}
+                      disabled={cartItems.length === 0 || isSending}
                       className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer"
                     >
-                      Process Sindo Commercial Quote Request
+                      {isSending ? 'Sending Inquiry Directly...' : 'Process Sindo Commercial Quote Request'}
                     </button>
                   </form>
                 </div>

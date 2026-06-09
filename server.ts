@@ -31,17 +31,27 @@ async function startServer() {
     next();
   });
 
-  // API Route - Direct RFQ Email Dispatcher
-  app.post("/api/send-rfq", async (req, res) => {
+  // Reusable RFQ Email Dispatcher Handler
+  const handleRfqSubmission = async (req: express.Request, res: express.Response) => {
+    console.log("[RFQ Submission Request Received]");
+    console.log("- Headers:", JSON.stringify(req.headers));
+    console.log("- Body payload:", JSON.stringify(req.body));
+
     try {
       const { rfqId, contactName, companyName, phone, email, industry, items, message, createdAt } = req.body;
 
       if (!contactName || !phone || !email || !items || !Array.isArray(items)) {
+        console.warn("[Validation Error] Missing mandatory RFQ properties.");
         return res.status(400).json({
           success: false,
           error: "Missing required fields (contactName, phone, email, and items are mandatory)."
         });
       }
+
+      console.log(`- RFQ ID: ${rfqId}`);
+      console.log(`- Contact: ${contactName} (${email}) | Phone: ${phone}`);
+      console.log(`- Company: ${companyName || 'N/A'} | Industry: ${industry || 'N/A'}`);
+      console.log(`- Ordered items count: ${items.length}`);
 
       // 1. Compile the Email layout
       const itemsHtml = items.map((item: any, idx: number) => {
@@ -170,14 +180,19 @@ Sindo Engineering Automated System
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
       const emailFrom = process.env.EMAIL_FROM || smtpUser || "no-reply@sindoengineering.com";
-      
-      // Default to company address and also CC the client
       const emailTo = process.env.EMAIL_TO || "sindoengineering@gmail.com";
 
-      console.log(`[RFQ Received] ID: ${rfqId} from ${contactName} (${email})`);
+      console.log("[SMTP Environment Variables Status]");
+      console.log(`- SMTP_HOST: ${smtpHost || "(empty)"}`);
+      console.log(`- SMTP_PORT: ${smtpPort}`);
+      console.log(`- SMTP_USER: ${smtpUser || "(empty)"}`);
+      console.log(`- SMTP_PASS: ${smtpPass ? "******** (masked)" : "(empty)"}`);
+      console.log(`- EMAIL_FROM: ${emailFrom}`);
+      console.log(`- EMAIL_TO: ${emailTo}`);
 
       if (smtpHost && smtpUser && smtpPass) {
-        console.log(`[SMTP Settings] Attempting direct send to ${emailTo} from ${emailFrom} using ${smtpHost}:${smtpPort}`);
+        console.log(`[SMTP Transmission Initiated] Attempting to deliver email to: ${emailTo}`);
+        
         // Build transporter (lazy-initialization)
         const transporter = nodemailer.createTransport({
           host: smtpHost,
@@ -193,7 +208,7 @@ Sindo Engineering Automated System
         });
 
         // Send email to company & CC customer
-        await transporter.sendMail({
+        const info = await transporter.sendMail({
           from: `"Sindo RFQ System" <${emailFrom}>`,
           to: emailTo,
           cc: email, // CC the customer directly to confirm receipt!
@@ -202,35 +217,46 @@ Sindo Engineering Automated System
           html: htmlContent,
         });
 
-        console.log(`[SMTP Sent] RFQ ${rfqId} emailed successfully to Sindo & CC'd to ${email}`);
-        return res.json({
+        console.log(`[SMTP Transmission Success] Message ID: ${info.messageId}`);
+        console.log(`- Recipient: ${emailTo}`);
+        console.log(`- Carbon Copy: ${email}`);
+
+        return res.status(200).json({
           success: true,
           mode: "direct",
-          message: "Commercial quotation requested directly. Check email inbox for receipt reference!"
+          message: "Commercial quotation requested successfully. Check email inbox for receipt reference!",
+          messageId: info.messageId
         });
       } else {
         // Fallback Simulation Mode
-        console.warn("[SMTP Bypass] Running in Developer Simulation. No SMTP credentials detected in .env.");
-        console.log("------- SIMULATED EMAIL CONTENT START -------");
+        console.warn("[SMTP Bypass Warning] Running in Simulation mode. Missing SMTP configuration keys in environment.");
+        console.log("------- EMULATED OUTBOX LOG START -------");
+        console.log(`To: ${emailTo}`);
+        console.log(`CC: ${email}`);
+        console.log(`Subject: [RFQ Client Intake] ID: ${rfqId}`);
         console.log(plainTextContent);
-        console.log("------- SIMULATED EMAIL CONTENT END -------");
+        console.log("------- EMULATED OUTBOX LOG END -------");
 
-        return res.json({
+        return res.status(200).json({
           success: true,
           mode: "simulation",
           warning: "SMTP keys not globally binded in environment variables.",
-          message: "RFQ successfully received & recorded by Sindo local servers. Under standard production, an instant email copy is forwarded directly."
+          message: "RFQ successfully compiled by Sindo local servers. Under standard production, an email copy is dispatched."
         });
       }
 
     } catch (error: any) {
-      console.error("[RFQ Submission Error]", error);
+      console.error("[RFQ Submission Failure Trace]", error);
       return res.status(500).json({
         success: false,
-        error: error.message || "Failed to process the direct email request."
+        error: error.message || "Failed to process the quotation request via mail service."
       });
     }
-  });
+  };
+
+  // Bind to BOTH endpoints to prevent 404s under any client resolution scheme
+  app.post("/api/send-rfq", handleRfqSubmission);
+  app.post("/send-rfq", handleRfqSubmission);
 
   // Vite development middleware vs Static Production bundle
   if (process.env.NODE_ENV !== "production") {

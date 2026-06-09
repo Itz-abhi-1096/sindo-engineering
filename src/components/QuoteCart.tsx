@@ -173,25 +173,52 @@ ${req.contactName}`;
 
     try {
       // Send real direct API POST to Express backend
-      const response = await fetch('/api/send-rfq', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          rfqId: newRequest.id,
-          contactName: newRequest.contactName,
-          companyName: newRequest.companyName,
-          phone: newRequest.phone,
-          email: newRequest.email,
-          industry: newRequest.industry,
-          items: newRequest.items,
-          message: newRequest.message,
-          createdAt: newRequest.createdAt
-        })
-      });
+      let response;
+      const payload = {
+        rfqId: newRequest.id,
+        contactName: newRequest.contactName,
+        companyName: newRequest.companyName,
+        phone: newRequest.phone,
+        email: newRequest.email,
+        industry: newRequest.industry,
+        items: newRequest.items,
+        message: newRequest.message,
+        createdAt: newRequest.createdAt
+      };
 
-      if (response.ok) {
+      try {
+        console.log("dispatching RFQ payload to primary endpoint: /api/send-rfq");
+        response = await fetch('/api/send-rfq', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        // If the server returns a 404 client error, try the alternative non-api route immediately
+        if (response.status === 404) {
+          console.warn('/api/send-rfq returned 404. Dual-routing fallback initiated. Trying /send-rfq path...');
+          response = await fetch('/send-rfq', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+        }
+      } catch (fetchErr) {
+        console.warn('/api/send-rfq connection error. Trying fallback /send-rfq path directly...', fetchErr);
+        response = await fetch('/send-rfq', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (response && response.ok) {
         const data = await response.json();
         if (data.success) {
           setSendResult(data);
@@ -209,7 +236,7 @@ ${req.contactName}`;
           throw new Error(data.error || 'Server error');
         }
       } else {
-        throw new Error(`Server returned HTTP ${response.status}`);
+        throw new Error(`Server returned HTTP ${response ? response.status : 'No Response'}`);
       }
     } catch (err: any) {
       console.warn('Backend API request could not be processed. Falling back gracefully to simulation/client copy mode:', err);

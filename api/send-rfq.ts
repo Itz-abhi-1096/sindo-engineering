@@ -163,15 +163,20 @@ Sindo Engineering Automated System
 
     // 2. Load SMTP config from process.env
     const smtpHost = process.env.SMTP_HOST;
-    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
+    const smtpAuthUser = smtpUser;
+    
+    // For secure delivery, the From address should ideally match the sending SMTP username
     const emailFrom = process.env.EMAIL_FROM || smtpUser || "no-reply@sindoengineering.com";
     const emailTo = process.env.EMAIL_TO || "sindoengineering@gmail.com";
 
     console.log("[Verifying serverless SMTP Configuration keys]");
     console.log(`- SMTP_HOST: ${smtpHost || "(empty)"}`);
+    console.log(`- SMTP_PORT: ${smtpPort}`);
     console.log(`- SMTP_USER: ${smtpUser || "(empty)"}`);
+    console.log(`- SMTP_PASS: ${smtpPass ? "******** (configured)" : "(empty)"}`);
     console.log(`- EMAIL_FROM: ${emailFrom}`);
     console.log(`- EMAIL_TO: ${emailTo}`);
 
@@ -179,28 +184,31 @@ Sindo Engineering Automated System
       console.error("[SMTP Config Error] Missing SMTP credentials.");
       return res.status(500).json({
         success: false,
-        error: "SMTP delivery service is not configured. (Missing SMTP_HOST, SMTP_USER, or SMTP_PASS on backend)"
+        error: "SMTP server of Sindo Engineering is not fully configured on the hosting server. Please verify your SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables."
       });
     }
 
-    console.log(`[SMTP Transmission] Attempting direct delivery to: ${emailTo}`);
+    console.log(`[SMTP Transmission] Initiating delivery to Sindo desk (${emailTo}) and carbon-copy to Customer (${email}).`);
 
-    // Build transporter
+    // Build transporter (Highly compatible settings for Gmail / standard TLS/SSL SMTP servers)
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
-      secure: smtpPort === 465,
+      secure: smtpPort === 465, // Use SSL for port 465
       auth: {
         user: smtpUser,
         pass: smtpPass,
       },
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false // Bypasses self-signed certificate constraints often found in corporate mail paths
+      },
+      connectionTimeout: 10000, // 10 seconds timeout
+      greetingTimeout: 10000
     });
 
     const info = await transporter.sendMail({
       from: `"Sindo RFQ System" <${emailFrom}>`,
+      replyTo: email, // Directs sales team clicks on 'Reply' straight to customer's inbox
       to: emailTo,
       cc: email, // CC the customer directly to confirm receipt!
       subject: `[RFQ Client Intake] ID: ${rfqId} - From ${companyName || contactName}`,
@@ -212,15 +220,23 @@ Sindo Engineering Automated System
     return res.status(200).json({
       success: true,
       mode: "direct",
-      message: "Commercial quotation requested successfully. Check email inbox for receipt reference!",
+      message: "Commercial quotation requested successfully! A detailed specifications docket has been emailed to you and the engineering desk.",
       messageId: info.messageId
     });
 
   } catch (error: any) {
-    console.error("[Serverless API Exception Handled]", error);
+    console.error("[Serverless API Exception Handled] Mail Delivery Failed:", error);
+    
+    let userFriendlyError = error.message || "Failed to dispatch email.";
+    if (error.code === "EAUTH") {
+      userFriendlyError = "SMTP Authentication Failed (EAUTH). Please verify that your SMTP_USER and SMTP_PASS (or App Password) are correct and allow secure SMTP connections.";
+    } else if (error.code === "ECONNRESET" || error.code === "ETIMEDOUT") {
+      userFriendlyError = "Connection to SMTP server timed out or was reset (network block). Verify your SMTP_HOST and SMTP_PORT options.";
+    }
+
     return res.status(500).json({
       success: false,
-      error: error.message || "Failed to process the quotation request via mail service."
+      error: `Mail Dispatch Failure: ${userFriendlyError}`
     });
   }
 }

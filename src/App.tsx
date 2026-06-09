@@ -6,6 +6,8 @@ import ProductCatalog from './components/ProductCatalog';
 import TechnicalCatalog from './components/TechnicalCatalog';
 import QuoteCart from './components/QuoteCart';
 import Footer from './components/Footer';
+// @ts-ignore
+import pipeBgImage from './assets/images/sindo_steel_pipes_bg_1780740339187.png';
 
 // Icons for local sections
 import { 
@@ -155,7 +157,7 @@ export default function App() {
           {/* Sindo background image backplate with soft dark linear gradient overlays */}
           <div className="absolute inset-0 z-0 select-none opacity-30 pointer-events-none">
             <img 
-              src="/src/assets/images/sindo_steel_pipes_bg_1780740339187.png" 
+              src={pipeBgImage} 
               alt="Stainless Steel Fittings Background" 
               className="w-full h-full object-cover filter brightness-75"
               referrerPolicy="no-referrer"

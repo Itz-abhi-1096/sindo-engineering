@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { QuoteItem, QuoteRequest } from '../types';
-import { INDUSTRIES } from '../data';
-import { X, Trash2, Calendar, FileText, CheckCircle2, Factory, PhoneCall, MailOpen, Landmark, Sparkles, Mail, Copy, Check } from 'lucide-react';
+import { QuoteItem, QuoteRequest, Product } from '../types';
+import { INDUSTRIES, PRODUCTS } from '../data';
+import { X, Trash2, Calendar, FileText, CheckCircle2, Factory, PhoneCall, MailOpen, Landmark, Sparkles, Mail, Copy, Check, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface QuoteCartProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface QuoteCartProps {
   onRemoveItem: (itemId: string) => void;
   onUpdateQty: (itemId: string, qty: number) => void;
   onSubmitQuote: (request: QuoteRequest) => void;
+  onAddItem: (product: Product, size: string, grade: string, qty: number) => void;
 }
 
 export default function QuoteCart({
@@ -18,7 +19,8 @@ export default function QuoteCart({
   cartItems,
   onRemoveItem,
   onUpdateQty,
-  onSubmitQuote
+  onSubmitQuote,
+  onAddItem
 }: QuoteCartProps) {
   
   // Quote form state
@@ -42,6 +44,14 @@ export default function QuoteCart({
     error?: string;
   } | null>(null);
 
+  // Quick Add Fittings Dropdown Form State
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(PRODUCTS[0]?.id || '');
+  const [quickSize, setQuickSize] = useState('1"');
+  const [quickGrade, setQuickGrade] = useState('SS316');
+  const [quickQty, setQuickQty] = useState(1);
+  const [quickAddSuccess, setQuickAddSuccess] = useState('');
+
   if (!isOpen) return null;
 
   // Approximate weight estimator for fun & engineering realism
@@ -57,6 +67,134 @@ export default function QuoteCart({
     return acc + (parseFloat(calculateEstWeight(item)));
   }, 0).toFixed(1);
 
+  const renderQuickAddForm = () => {
+    return (
+      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4.5 animate-fade-in relative text-left">
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5 font-sans">
+            <Plus className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+            Quick Add Fitting
+          </h4>
+          <button 
+            type="button"
+            onClick={() => setShowQuickAdd(false)}
+            className="text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 tracking-wider cursor-pointer"
+          >
+            Collapse
+          </button>
+        </div>
+
+        <div className="space-y-3.5 text-left">
+          {/* Fitting Selection Dropdown */}
+          <div>
+            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+              Select Piping Fitting
+            </label>
+            <div className="relative">
+              <select
+                id="quick-add-fitting-dropdown"
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-slate-800 rounded-xl p-2.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium appearance-none cursor-pointer"
+              >
+                {PRODUCTS.map((prod) => (
+                  <option key={prod.id} value={prod.id}>
+                    {prod.name} ({prod.category})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 pt-0.5">
+                <ChevronDown className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Size Dropdown */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Diameter Size
+              </label>
+              <div className="relative">
+                <select
+                  value={quickSize}
+                  onChange={(e) => setQuickSize(e.target.value)}
+                  className="w-full bg-white border border-slate-200 text-slate-850 rounded-xl p-2.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-semibold appearance-none cursor-pointer"
+                >
+                  {['1/2"', '3/4"', '1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"', 'Custom special sizing'].map((sz) => (
+                    <option key={sz} value={sz}>{sz}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 pt-0.5">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Grade Dropdown */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Material Grade
+              </label>
+              <div className="relative">
+                <select
+                  value={quickGrade}
+                  onChange={(e) => setQuickGrade(e.target.value)}
+                  className="w-full bg-white border border-slate-200 text-slate-850 rounded-xl p-2.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-semibold appearance-none cursor-pointer"
+                >
+                  {['SS316', 'SS304'].map((grd) => (
+                    <option key={grd} value={grd}>{grd}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-500 pt-0.5">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 pt-1.5">
+            {/* Qty edit section */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">Qty:</span>
+              <div className="flex items-center border border-slate-200 bg-white rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setQuickQty(prev => Math.max(1, prev - 1))}
+                  className="px-2.5 py-1 hover:bg-slate-50 text-slate-500 font-bold text-xs cursor-pointer select-none"
+                >
+                  -
+                </button>
+                <span className="px-3 text-xs font-bold font-mono text-slate-800">{quickQty}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuickQty(prev => prev + 1)}
+                  className="px-2.5 py-1 hover:bg-slate-50 text-slate-500 font-bold text-xs cursor-pointer select-none"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleQuickAddSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs tracking-wider uppercase py-2 px-4 rounded-xl transition-all shadow-md shadow-blue-600/10 hover:shadow-blue-600/20 cursor-pointer"
+            >
+              Add to Request
+            </button>
+          </div>
+
+          {quickAddSuccess && (
+            <div className="mt-2 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 p-2 rounded-lg animate-fade-in text-center leading-normal">
+              {quickAddSuccess}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const generatePlaintextRFQ = (req: QuoteRequest) => {
     const itemsText = req.items.map((item, idx) => {
       return `${idx + 1}. ${item.product.name} - Size: ${item.selectedSize} (Grade: ${item.selectedGrade}) - Qty: ${item.quantity} pcs`;
@@ -69,8 +207,8 @@ I would like to request a commercial price quotation for the following Stainless
 --- RFQ OVERVIEW ---
 Reference ID: ${req.id}
 Contact Person: ${req.contactName}
-Company Name: ${req.companyName || 'Not Provided (Direct/Retail)'}
-Direct Phone: ${req.phone}
+Company Name: ${req.companyName || 'Not Provided (Retail/Standard)'}
+Phone: ${req.phone}
 Registered Email: ${req.email}
 Industry Sector: ${req.industry}
 
@@ -96,6 +234,18 @@ ${req.companyName ? req.companyName : ''}`;
     }).catch(err => {
       console.error('Could not copy text: ', err);
     });
+  };
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const product = PRODUCTS.find(p => p.id === selectedProductId);
+    if (!product) return;
+    onAddItem(product, quickSize, quickGrade, quickQty);
+    setQuickAddSuccess(`Successfully added ${quickQty}x ${product.name} (${quickSize}, ${quickGrade}) to your inquiry!`);
+    setQuickQty(1);
+    setTimeout(() => {
+      setQuickAddSuccess('');
+    }, 4500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -235,13 +385,13 @@ ${req.companyName ? req.companyName : ''}`;
                   </p>
                 </div>
 
-                {/* Direct Delivery Notice */}
+                {/* Email Delivery Notice */}
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex gap-3 text-emerald-800 text-xs text-left">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 animate-pulse mt-0.5" />
                   <div>
-                    <strong className="block font-bold text-emerald-950">✓ Direct Email Dispatched!</strong>
+                    <strong className="block font-bold text-emerald-950">✓ Email Invoice Dispatched!</strong>
                     <p className="text-emerald-700/90 mt-1 leading-normal">
-                      Your detailed RFQ has been emailed directly to the Sindo engineering sales desk (<strong className="text-slate-900">sindoengineering@gmail.com</strong>). A verification invoice has also been sent as a carbon-copy (CC) reference directly to <strong className="text-slate-900">{submittedRequest.email}</strong>.
+                      Your detailed RFQ has been emailed to the Sindo engineering sales desk (<strong className="text-slate-900">sindoengineering@gmail.com</strong>). A verification invoice has also been sent as a carbon-copy (CC) reference to <strong className="text-slate-900">{submittedRequest.email}</strong>.
                     </p>
                   </div>
                 </div>
@@ -278,10 +428,10 @@ ${req.companyName ? req.companyName : ''}`;
                     </div>
                     <div>
                       <span className="text-slate-400 block uppercase text-[9px] tracking-wider">Company / Entity</span>
-                      <span className="font-semibold text-slate-800 font-sans">{submittedRequest.companyName || 'Not Provided (Retail/Direct)'}</span>
+                      <span className="font-semibold text-slate-800 font-sans">{submittedRequest.companyName || 'Not Provided (Retail/Standard)'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block uppercase text-[9px] tracking-wider">Direct Phone</span>
+                      <span className="text-slate-400 block uppercase text-[9px] tracking-wider">Phone number</span>
                       <span className="font-bold text-slate-800">{submittedRequest.phone}</span>
                     </div>
                     <div>
@@ -386,21 +536,36 @@ ${req.companyName ? req.companyName : ''}`;
                 <div className="space-y-4">
                   <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider flex items-center justify-between">
                     <span>1. Configured items ({cartItems.length})</span>
-                    {cartItems.length > 0 && (
-                      <span className="text-xs font-mono font-normal text-slate-500 capitalize bg-slate-100 py-1 px-2 rounded">
-                        Est. Weight: ~{totalEstWeight} kg
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickAdd(!showQuickAdd)}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-1 bg-blue-50/50 hover:bg-blue-50 py-1.5 px-2.5 rounded-lg border border-blue-100 transition-colors cursor-pointer"
+                      >
+                        {showQuickAdd ? 'Hide Quick Add' : '+ Quick Add Item'}
+                      </button>
+                      {cartItems.length > 0 && (
+                        <span className="text-xs font-mono font-normal text-slate-500 capitalize bg-slate-100 py-1 px-2 rounded">
+                          Est. Weight: ~{totalEstWeight} kg
+                        </span>
+                      )}
+                    </div>
                   </h3>
+
+                  {showQuickAdd && (
+                    <div className="mb-2">
+                      {renderQuickAddForm()}
+                    </div>
+                  )}
 
                   {cartItems.length === 0 ? (
                     <div className="border-2 border-dashed border-slate-200 rounded-2xl py-12 px-4 text-center">
-                      <p className="text-slate-500 text-sm">Your quotation request cart is currently empty.</p>
+                      <p className="text-slate-500 text-sm mb-3">Your quotation request cart is currently empty.</p>
                       <button
-                        onClick={onClose}
-                        className="mt-3 text-blue-600 hover:text-blue-700 font-semibold text-xs uppercase tracking-wider"
+                        onClick={() => setShowQuickAdd(true)}
+                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-600/10 hover:shadow-blue-600/25 cursor-pointer animate-pulse"
                       >
-                        Browse items to add
+                        <Plus className="w-4 h-4" /> Browse items to add (Select Fitting Dropdown)
                       </button>
                     </div>
                   ) : (
@@ -576,7 +741,7 @@ ${req.companyName ? req.companyName : ''}`;
                       disabled={cartItems.length === 0 || isSending}
                       className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer"
                     >
-                      {isSending ? 'Sending Inquiry Directly...' : 'Process Sindo Commercial Quote Request'}
+                      {isSending ? 'Sending Quote Request...' : 'Get Quote Response'}
                     </button>
                   </form>
                 </div>

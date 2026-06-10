@@ -124,16 +124,8 @@ export default function Header({ onNavigate, activeSection, cartCount, openCart 
                 )}
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline text-slate-700 group-hover:text-slate-900">
-                RFQ Cart
+                RFQ / Get Quote
               </span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('#contact')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 px-4 rounded-lg hidden sm:flex items-center gap-1.5 uppercase tracking-wider transition-all shadow-md shadow-blue-600/20 hover:shadow-blue-600/35 cursor-pointer"
-            >
-              Get Quote
-              <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
 
             {/* Mobile Menu Icon */}
@@ -183,10 +175,13 @@ export default function Header({ onNavigate, activeSection, cartCount, openCart 
             </div>
             
             <button
-              onClick={() => handleNavClick('#contact')}
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openCart();
+              }}
               className="w-full bg-blue-600 text-white font-bold text-center py-3.5 rounded-lg text-sm transition-all tracking-wider uppercase mt-2 shadow-lg"
             >
-              Request a Fast Quote
+              View RFQ / Get Quote
             </button>
           </div>
         </div>

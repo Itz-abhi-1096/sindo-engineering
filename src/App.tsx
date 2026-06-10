@@ -218,10 +218,10 @@ export default function App() {
                   </button>
 
                   <button
-                    onClick={() => handleNavigate('contact')}
+                    onClick={() => setIsCartOpen(true)}
                     className="bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all cursor-pointer"
                   >
-                    Quick Quote Form
+                    Configure RFQ / Get Quote
                   </button>
                 </div>
 
@@ -522,6 +522,7 @@ export default function App() {
         onRemoveItem={handleRemoveItem}
         onUpdateQty={handleUpdateQty}
         onSubmitQuote={handleSubmitQuote}
+        onAddItem={handleAddToQuote}
       />
 
       {/* Pop-up modal for displaying a past/locally-saved quote */}

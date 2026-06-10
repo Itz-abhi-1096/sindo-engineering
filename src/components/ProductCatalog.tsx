@@ -169,7 +169,7 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
                         onClick={() => handleOpenDetails(product)}
                         className="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center uppercase tracking-wider cursor-pointer"
                       >
-                        <Plus className="w-4 h-4" /> RFQ Form
+                        <Plus className="w-4 h-4" /> View Specs & Add
                       </button>
                     </div>
                   </div>

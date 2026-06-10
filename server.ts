@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import sendRfqHandler from "./api/send-rfq";
 
 // Load environment variables
 dotenv.config();
@@ -29,10 +28,6 @@ async function startServer() {
     console.log(`[API Request Log] Method: ${req.method} | URL: ${req.url} | Origin: ${req.headers.origin || "Same Origin"}`);
     next();
   });
-
-  // Bind the modular send-rfq API handler
-  app.post("/api/send-rfq", sendRfqHandler);
-  app.post("/send-rfq", sendRfqHandler);
 
   // Vite development middleware vs Static Production bundle
   if (process.env.NODE_ENV !== "production") {

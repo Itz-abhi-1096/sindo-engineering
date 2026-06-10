@@ -5,11 +5,9 @@ import SindoLogo from './SindoLogo';
 interface HeaderProps {
   onNavigate: (sectionId: string) => void;
   activeSection: string;
-  cartCount: number;
-  openCart: () => void;
 }
 
-export default function Header({ onNavigate, activeSection, cartCount, openCart }: HeaderProps) {
+export default function Header({ onNavigate, activeSection }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -103,32 +101,8 @@ export default function Header({ onNavigate, activeSection, cartCount, openCart 
             })}
           </nav>
 
-          {/* Right Action buttons */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openCart}
-              className="relative p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-all flex items-center gap-2 group border border-slate-200"
-              title="View quote request cart"
-            >
-              <div className="relative">
-                {/* Simulated quote cart layout icon */}
-                <div className="w-5 h-5 flex flex-col justify-between items-center">
-                  <div className="w-4 h-1 bg-slate-700 rounded-sm"></div>
-                  <div className="w-4 h-1 bg-slate-700 rounded-sm"></div>
-                  <div className="w-3 h-1 bg-slate-700 rounded-sm"></div>
-                </div>
-                {cartCount > 0 && (
-                  <span className="absolute -top-3.5 -right-3.5 bg-blue-600 text-white text-[11px] font-mono font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse border-2 border-white shadow-sm">
-                    {cartCount}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline text-slate-700 group-hover:text-slate-900">
-                RFQ / Get Quote
-              </span>
-            </button>
-
-            {/* Mobile Menu Icon */}
+          {/* Mobile Menu Icon */}
+          <div className="flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -174,15 +148,7 @@ export default function Header({ onNavigate, activeSection, cartCount, openCart 
               </a>
             </div>
             
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openCart();
-              }}
-              className="w-full bg-blue-600 text-white font-bold text-center py-3.5 rounded-lg text-sm transition-all tracking-wider uppercase mt-2 shadow-lg"
-            >
-              View RFQ / Get Quote
-            </button>
+            {/* Contact details only */}
           </div>
         </div>
       )}

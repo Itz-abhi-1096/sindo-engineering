@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Product, QuoteItem, QuoteRequest } from './types';
+import React, { useState } from 'react';
 import { PRODUCTS, INDUSTRIES, WHY_CHOOSE_US } from './data';
 import Header from './components/Header';
 import ProductCatalog from './components/ProductCatalog';
 import TechnicalCatalog from './components/TechnicalCatalog';
-import QuoteCart from './components/QuoteCart';
 import Footer from './components/Footer';
 // @ts-ignore
 import pipeBgImage from './assets/images/sindo_steel_pipes_bg_1780740339187.png';
@@ -24,48 +22,11 @@ import {
   Truck,
   Users,
   Compass,
-  Plus,
-  CheckCircle2,
   Factory
 } from 'lucide-react';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState('home');
-  const [cartItems, setCartItems] = useState<QuoteItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  
-  // Keep track of submitted quote history locally for testing and interactive richness
-  const [previousInquiries, setPreviousInquiries] = useState<QuoteRequest[]>([]);
-  
-  // Custom past quotation view state
-  const [selectedPastRequest, setSelectedPastRequest] = useState<QuoteRequest | null>(null);
-
-  // Load quote requests and quick cart on first mount
-  useEffect(() => {
-    const historicalQuotes = localStorage.getItem('sindo_quotes_history');
-    if (historicalQuotes) {
-      try {
-        setPreviousInquiries(JSON.parse(historicalQuotes));
-      } catch (e) {
-        console.error('Failed to parse quote history', e);
-      }
-    }
-    
-    const draftCart = localStorage.getItem('sindo_draft_cart');
-    if (draftCart) {
-      try {
-        setCartItems(JSON.parse(draftCart));
-      } catch (e) {
-        console.error('Failed to parse draft cart', e);
-      }
-    }
-  }, []);
-
-  // Save draft cart state
-  const saveCartToLocalStorage = (updatedItems: QuoteItem[]) => {
-    setCartItems(updatedItems);
-    localStorage.setItem('sindo_draft_cart', JSON.stringify(updatedItems));
-  };
 
   // Nav scroll handler
   const handleNavigate = (sectionId: string) => {
@@ -74,54 +35,6 @@ export default function App() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
-
-  // Manage Cart operations
-  const handleAddToQuote = (product: Product, size: string, grade: string, qty: number) => {
-    const existingIndex = cartItems.findIndex(
-      (item) => item.product.id === product.id && 
-                item.selectedSize === size && 
-                item.selectedGrade === grade
-    );
-
-    if (existingIndex > -1) {
-      const updated = [...cartItems];
-      updated[existingIndex].quantity += qty;
-      saveCartToLocalStorage(updated);
-    } else {
-      const newItem: QuoteItem = {
-        id: `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        product,
-        selectedSize: size,
-        selectedGrade: grade,
-        quantity: qty
-      };
-      saveCartToLocalStorage([...cartItems, newItem]);
-    }
-  };
-
-  const handleRemoveItem = (itemId: string) => {
-    const updated = cartItems.filter((i) => i.id !== itemId);
-    saveCartToLocalStorage(updated);
-  };
-
-  const handleUpdateQty = (itemId: string, qty: number) => {
-    const updated = cartItems.map((item) => {
-      if (item.id === itemId) {
-        return { ...item, quantity: qty };
-      }
-      return item;
-    });
-    saveCartToLocalStorage(updated);
-  };
-
-  const handleSubmitQuote = (request: QuoteRequest) => {
-    const updatedHistory = [request, ...previousInquiries];
-    setPreviousInquiries(updatedHistory);
-    localStorage.setItem('sindo_quotes_history', JSON.stringify(updatedHistory));
-    
-    // Clear functional current cart
-    saveCartToLocalStorage([]);
   };
 
   // Dynamically map icons to render why choose us / industry items
@@ -144,8 +57,6 @@ export default function App() {
       <Header 
         onNavigate={handleNavigate} 
         activeSection={activeSection} 
-        cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
-        openCart={() => setIsCartOpen(true)}
       />
 
       {/* Main Sections wrapper */}
@@ -218,10 +129,10 @@ export default function App() {
                   </button>
 
                   <button
-                    onClick={() => setIsCartOpen(true)}
+                    onClick={() => handleNavigate('products')}
                     className="bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white font-semibold text-sm px-6 py-4 rounded-xl transition-all cursor-pointer"
                   >
-                    Configure RFQ / Get Quote
+                    Browse Products
                   </button>
                 </div>
 
@@ -275,16 +186,10 @@ export default function App() {
         </section>
 
         {/* Technical BS 4825-2 Standard Catalog Resource Section */}
-        <TechnicalCatalog
-          onAddToQuote={handleAddToQuote}
-          addedProductIds={cartItems.map((item) => item.product.id)}
-        />
+        <TechnicalCatalog />
 
         {/* Product Catalog view including interactive features */}
-        <ProductCatalog 
-          onAddToQuote={handleAddToQuote}
-          addedProductIds={cartItems.map((item) => item.product.id)}
-        />
+        <ProductCatalog />
 
         {/* Why Choose Us Section */}
         <section id="why-us" className="py-24 bg-white border-t border-slate-200 scroll-mt-20">
@@ -491,13 +396,7 @@ export default function App() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400 hover:text-white transition-colors cursor-pointer mt-4"
-              >
-                Or customize sizes inside Quote Cart here
-                <ArrowRight className="w-4.5 h-4.5" />
-              </button>
+
 
             </div>
           </div>
@@ -508,105 +407,7 @@ export default function App() {
       {/* Footer view */}
       <Footer 
         onNavigate={handleNavigate}
-        previousInquiries={previousInquiries}
-        onSelectPastQuote={(quote) => {
-          setSelectedPastRequest(quote);
-        }}
       />
-
-      {/* Interactive Cart Overlay Drawer */}
-      <QuoteCart 
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cartItems={cartItems}
-        onRemoveItem={handleRemoveItem}
-        onUpdateQty={handleUpdateQty}
-        onSubmitQuote={handleSubmitQuote}
-        onAddItem={handleAddToQuote}
-      />
-
-      {/* Pop-up modal for displaying a past/locally-saved quote */}
-      {selectedPastRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in text-slate-800">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-xl w-full p-6 sm:p-8 animate-in zoom-in-95 relative font-sans">
-            
-            <div className="flex justify-between items-start border-b border-slate-200 pb-3 mb-4">
-              <div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                  Local Record
-                </span>
-                <h3 className="text-lg font-bold text-slate-900">{selectedPastRequest.id}</h3>
-              </div>
-              <button 
-                onClick={() => setSelectedPastRequest(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <p className="text-slate-500 font-mono">Date submitted: {selectedPastRequest.createdAt}</p>
-              
-              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-800 uppercase text-[9px] tracking-wide mb-1.5 text-slate-400">Customer Info</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <span>Name: <strong className="text-slate-900">{selectedPastRequest.contactName}</strong></span>
-                  <span>Company: <strong className="text-slate-900">{selectedPastRequest.companyName || 'N/A'}</strong></span>
-                  <span>Phone: <strong className="text-slate-900">{selectedPastRequest.phone}</strong></span>
-                  <span>Email: <strong className="text-slate-900 text-blue-700">{selectedPastRequest.email}</strong></span>
-                </div>
-              </div>
-
-              <div>
-                <p className="font-bold text-slate-800 uppercase text-[9px] tracking-wide mb-2 text-slate-400">Piping Components List</p>
-                <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1.5">
-                  {selectedPastRequest.items.map((it, idx) => (
-                    <div key={idx} className="flex justify-between bg-slate-50 p-2.5 rounded border border-slate-100">
-                      <div>
-                        <span className="font-bold text-slate-900">{it.product.name}</span>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{it.selectedSize} | {it.selectedGrade}</p>
-                      </div>
-                      <span className="font-bold font-mono text-slate-800">{it.quantity} pcs</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {selectedPastRequest.message && (
-                <div>
-                  <p className="font-bold text-slate-800 uppercase text-[9px] tracking-wide mb-1 text-slate-400">Custom Fabrication message</p>
-                  <p className="bg-slate-50 p-2 rounded italic text-slate-600 border border-slate-100">"{selectedPastRequest.message}"</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2.5 mt-6 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg text-xs font-bold uppercase transition-all border border-slate-300 text-center cursor-pointer"
-              >
-                Print Quote Record
-              </button>
-              <button 
-                onClick={() => {
-                  // Re-hydrate the items as draft cart
-                  setCartItems(selectedPastRequest.items);
-                  localStorage.setItem('sindo_draft_cart', JSON.stringify(selectedPastRequest.items));
-                  setSelectedPastRequest(null);
-                  setIsCartOpen(true);
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-center cursor-pointer"
-              >
-                Re-load to active RFQ
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

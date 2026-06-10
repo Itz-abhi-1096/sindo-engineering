@@ -1,15 +1,12 @@
 import React from 'react';
 import { Phone, Mail, MapPin, Shield, HelpCircle, FileSpreadsheet, Download, RefreshCw, Layers } from 'lucide-react';
-import { QuoteRequest } from '../types';
 import SindoLogo from './SindoLogo';
 
 interface FooterProps {
   onNavigate: (sectionId: string) => void;
-  previousInquiries: QuoteRequest[];
-  onSelectPastQuote: (quote: QuoteRequest) => void;
 }
 
-export default function Footer({ onNavigate, previousInquiries, onSelectPastQuote }: FooterProps) {
+export default function Footer({ onNavigate }: FooterProps) {
   return (
     <footer className="bg-slate-900 text-slate-400 border-t border-slate-800">
       
@@ -114,36 +111,6 @@ export default function Footer({ onNavigate, previousInquiries, onSelectPastQuot
         </div>
 
       </div>
-
-      {/* Historical Quote Inquiries Log Panel (Unique local state feature) */}
-      {previousInquiries.length > 0 && (
-        <div className="bg-slate-950/60 border-b border-slate-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-            <h4 className="text-xs uppercase tracking-widest font-mono font-bold text-white mb-4 flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-blue-500" /> Your Local Inquiry History ({previousInquiries.length})
-            </h4>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {previousInquiries.map((inq) => (
-                <div 
-                  key={inq.id}
-                  onClick={() => onSelectPastQuote(inq)}
-                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800/50 p-4 rounded-xl cursor-pointer transition-all flex justify-between items-center group"
-                >
-                  <div>
-                    <span className="font-mono font-bold text-white">{inq.id}</span>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{inq.createdAt}</p>
-                    <p className="text-xs font-semibold text-blue-400 mt-1">{inq.items.length} items configured</p>
-                  </div>
-                  <button className="p-2 bg-slate-950 text-slate-400 group-hover:text-blue-400 rounded-lg transition-colors border border-slate-800">
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bottom Legal bar */}
       <div className="bg-slate-950 py-6 px-4">

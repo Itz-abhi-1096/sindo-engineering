@@ -3,22 +3,12 @@ import { Product } from '../types';
 import { PRODUCTS } from '../data';
 import { Search, Info, Plus, Check, SlidersHorizontal, ChevronRight, X } from 'lucide-react';
 
-interface ProductCatalogProps {
-  onAddToQuote: (product: Product, size: string, grade: string, qty: number) => void;
-  addedProductIds: string[];
-}
+interface ProductCatalogProps {}
 
-export default function ProductCatalog({ onAddToQuote, addedProductIds }: ProductCatalogProps) {
+export default function ProductCatalog({}: ProductCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeDetailsProduct, setActiveDetailsProduct] = useState<Product | null>(null);
-
-  // Quick form state inside details modal
-  const [selectedSize, setSelectedSize] = useState('');
-  const [customSize, setCustomSize] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('');
-  const [quantity, setQuantity] = useState(10);
-  const [recentlyAdded, setRecentlyAdded] = useState(false);
 
   const categories = ['All', 'Tee', 'Elbow & Bend', 'Reducer', 'Other', 'Custom'];
 
@@ -31,25 +21,6 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
 
   const handleOpenDetails = (product: Product) => {
     setActiveDetailsProduct(product);
-    // Auto-fill defaults based on first specs
-    setSelectedSize(product.specifications.sizeRange.split(' (')[0].split(',')[0].replace(' x ', ' x '));
-    setCustomSize('');
-    setSelectedGrade(product.specifications.grades[0]);
-    setQuantity(50); // Industrial wholesale default
-    setRecentlyAdded(false);
-  };
-
-  const handleModalAdd = () => {
-    if (!activeDetailsProduct) return;
-    const finalSize = selectedSize === 'Custom Special Sizing'
-      ? (customSize.trim() ? `${customSize.trim()}` : 'Custom Size')
-      : selectedSize;
-    onAddToQuote(activeDetailsProduct, finalSize, selectedGrade, quantity);
-    setRecentlyAdded(true);
-    setTimeout(() => {
-      setRecentlyAdded(false);
-      setActiveDetailsProduct(null);
-    }, 1200);
   };
 
   return (
@@ -110,7 +81,6 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredProducts.map((product) => {
-              const isAdded = addedProductIds.includes(product.id);
               return (
                 <div
                   key={product.id}
@@ -124,11 +94,6 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
                       <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 px-2.5 py-1 bg-slate-100 rounded">
                         {product.category}
                       </span>
-                      {isAdded && (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 animate-fade-in">
-                          <Check className="w-3.5 h-3.5" /> Added
-                        </span>
-                      )}
                     </div>
 
                     <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
@@ -157,19 +122,12 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
                     </div>
 
                     {/* Action buttons */}
-                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="mt-6 pt-4 border-t border-slate-100">
                       <button
                         onClick={() => handleOpenDetails(product)}
-                        className="text-slate-700 hover:text-blue-600 font-semibold text-xs flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 transition-colors rounded-lg cursor-pointer"
+                        className="w-full bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center uppercase tracking-wider cursor-pointer"
                       >
-                        <Info className="w-4 h-4" /> Technical Specs
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenDetails(product)}
-                        className="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center uppercase tracking-wider cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" /> View Specs & Add
+                        <Info className="w-4 h-4" /> View Technical Specifications
                       </button>
                     </div>
                   </div>
@@ -250,92 +208,14 @@ export default function ProductCatalog({ onAddToQuote, addedProductIds }: Produc
                 </div>
               </div>
 
-              {/* Add to RFQ Cart configuration Box */}
-              <div className="border border-blue-100 bg-blue-50/40 rounded-xl p-4 sm:p-5">
-                <h4 className="font-bold text-sm text-slate-900 mb-3.5 text-blue-900">Configure RFQ Specifications</h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* Select size */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Diameter Size</label>
-                    <select
-                      value={selectedSize}
-                      onChange={(e) => setSelectedSize(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-slate-800 rounded-lg p-2 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      {activeDetailsProduct.specifications.sizeRange.split(',').map((part) => {
-                        const val = part.trim().split(' (')[0].replace(' x ', ' x ');
-                        return <option key={val} value={val}>{val}</option>;
-                      })}
-                      <option value="Custom Special Sizing">Custom Sizing (Specify below)</option>
-                    </select>
-                  </div>
-
-                  {/* Select Grade */}
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Material Grade</label>
-                    <select
-                      value={selectedGrade}
-                      onChange={(e) => setSelectedGrade(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-slate-800 rounded-lg p-2 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      {activeDetailsProduct.specifications.grades.map((grd) => (
-                        <option key={grd} value={grd}>{grd}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Custom Sizing input field if Custom Sizing option is selected */}
-                  {selectedSize === 'Custom Special Sizing' && (
-                    <div className="col-span-1 sm:col-span-2 animate-in slide-in-from-top-2 duration-200 font-sans">
-                      <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Specify Custom Size</label>
-                      <input
-                        type="text"
-                        placeholder='e.g., 2.5", 3-1/2", 4" x 3", or bespoke dimensions'
-                        value={customSize}
-                        onChange={(e) => setCustomSize(e.target.value)}
-                        className="w-full bg-white border border-slate-200 text-slate-800 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
-                        required
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-4 items-end mt-4 pt-1">
-                  {/* Quantity */}
-                  <div className="w-1/3">
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Required Qty (pcs)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 50"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 0))}
-                      className="w-full bg-white border border-slate-200 text-slate-800 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-                    />
-                  </div>
-
-                  {/* Button Submission */}
-                  <button
-                    onClick={handleModalAdd}
-                    disabled={recentlyAdded}
-                    className={`flex-1 font-semibold text-xs py-3.5 px-4 rounded-lg flex items-center justify-center gap-1.5 uppercase tracking-wider transition-all cursor-pointer ${
-                      recentlyAdded
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    {recentlyAdded ? (
-                      <>
-                        <Check className="w-4 h-4" /> Added to Cart!
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4" /> Add to Quote Cart
-                      </>
-                    )}
-                  </button>
-                </div>
+              {/* Simple Close Button */}
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => setActiveDetailsProduct(null)}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-6 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                >
+                  Close Specification
+                </button>
               </div>
 
             </div>

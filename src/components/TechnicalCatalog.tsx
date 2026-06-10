@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
-import { Product } from '../types';
-import { Shield, FileDown, Search, ArrowRight, Table, Settings, Wrench, FileText, Check, Plus, HelpCircle } from 'lucide-react';
+import { Shield, ArrowRight, Table, Settings, Wrench } from 'lucide-react';
 
-interface TechnicalCatalogProps {
-  onAddToQuote: (product: Product, size: string, grade: string, qty: number) => void;
-  addedProductIds: string[];
-}
+interface TechnicalCatalogProps {}
 
 interface FittingDimension {
   nominalSize: string;
   cells: string[];
 }
 
-export default function TechnicalCatalog({ onAddToQuote, addedProductIds }: TechnicalCatalogProps) {
+export default function TechnicalCatalog({}: TechnicalCatalogProps) {
   const [selectedFitting, setSelectedFitting] = useState<string>('equal-tee');
-  const [selectedGrade, setSelectedGrade] = useState<string>('SS316L (Hygienic)');
-  const [quantity, setQuantity] = useState<number>(50);
-  const [addedItemFeedback, setAddedItemFeedback] = useState<string | null>(null);
 
   // Technical dataset holding precise values as per the manufacturer's BS 4825-2 scan
   const fittingData: Record<string, {
@@ -162,54 +155,6 @@ export default function TechnicalCatalog({ onAddToQuote, addedProductIds }: Tech
         { nominalSize: '4" x 2-1/2"', cells: ['4"', '2-1/2"', '28.58', '25.4', '38.1'] }
       ]
     }
-  };
-
-  const handleQuickAdd = (row: FittingDimension) => {
-    let productId = 'ss-equal-tee';
-    let productName = 'SS Equal Tee';
-    
-    if (selectedFitting === 'equal-tee') {
-      productId = 'ss-equal-tee';
-      productName = 'SS Equal Tee';
-    } else if (selectedFitting === 'unequal-tee') {
-      productId = 'ss-reducing-tee';
-      productName = 'SS Reducing Tee';
-    } else if (selectedFitting === '90-bend') {
-      productId = 'ss-bend';
-      productName = 'SS 90° Bend';
-    } else if (selectedFitting === 'concentric-reducer') {
-      productId = 'ss-concentric-reducer';
-      productName = 'SS Concentric Reducer';
-    } else if (selectedFitting === 'eccentric-reducer') {
-      productId = 'ss-eccentric-reducer';
-      productName = 'SS Eccentric Reducer';
-    }
-
-    const dummyProduct: Product = {
-      id: productId,
-      name: productName,
-      category: selectedFitting.includes('tee') ? 'Tee' : selectedFitting.includes('reducer') ? 'Reducer' : 'Elbow & Bend',
-      description: `Precision pipe fitting manufactured as per standard BS 4825 Part 2. Size: ${row.nominalSize}.`,
-      longDescription: `Sindo Engineering manufactures top-tier standard BS 4825-2 Stainless Steel components. Tested against extreme burst and sanitary requirements.`,
-      imageSeed: productId,
-      specifications: {
-        sizeRange: '1/2" to 4"',
-        grades: ['SS316L', 'SS304L'],
-        standards: ['BS 4825-2', 'ASME B16.9']
-      },
-      features: [
-        'Sanitary interior polish (Ra < 0.8 µm)',
-        'Full material traceback available',
-        'Strict conformance to ISO 9001 quality guidelines'
-      ]
-    };
-
-    onAddToQuote(dummyProduct, row.nominalSize, selectedGrade, quantity);
-    
-    setAddedItemFeedback(row.nominalSize);
-    setTimeout(() => {
-      setAddedItemFeedback(null);
-    }, 1500);
   };
 
   // Helper to render interactive blueprint graphic for each selected fitting
@@ -522,7 +467,7 @@ export default function TechnicalCatalog({ onAddToQuote, addedProductIds }: Tech
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">BS 4825-2 Engineering Catalog</h2>
           <p className="mt-4 text-sm sm:text-base text-slate-400 leading-relaxed">
-            Sindo Engineering products are fully aligned with the British Standard BS 4825 Part 2 sanitary specification. Browse real-time engineering blueprints, verify standard physical tolerances, and configure precise designs to add directly to your RFQ quote list.
+            Sindo Engineering products are fully aligned with the British Standard BS 4825 Part 2 sanitary specification. Browse real-time engineering blueprints and verify standard physical tolerances across all product lines.
           </p>
         </div>
 
@@ -611,7 +556,6 @@ export default function TechnicalCatalog({ onAddToQuote, addedProductIds }: Tech
                       {currentFittingDetails.headers.map((hdr, hIdx) => (
                         <th key={hIdx} className="p-3.5 font-semibold text-center first:text-left">{hdr}</th>
                       ))}
-                      <th className="p-3.5 font-semibold text-center">Add to Quotation</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -632,66 +576,10 @@ export default function TechnicalCatalog({ onAddToQuote, addedProductIds }: Tech
                             {cell}
                           </td>
                         ))}
-                        
-                        <td className="p-3.5 text-center">
-                          <button
-                            onClick={() => handleQuickAdd(row)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all inline-flex items-center gap-1 cursor-pointer ${
-                              addedItemFeedback === row.nominalSize
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-500'
-                            }`}
-                          >
-                            {addedItemFeedback === row.nominalSize ? (
-                              <>
-                                <Check className="w-3 h-3" /> Added!
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-3 h-3" /> Add to RFQ
-                              </>
-                            )}
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Configure defaults bar inside table */}
-              <div className="bg-slate-900 p-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-sans">
-                <div className="flex gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Material Grade for RFQ</label>
-                    <select
-                      value={selectedGrade}
-                      onChange={(e) => setSelectedGrade(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 text-slate-300 rounded p-1 text-xs focus:outline-none focus:border-blue-500 font-sans cursor-pointer"
-                    >
-                      <option value="SS316L (Hygienic)">SS316L (Pharm / Sterile)</option>
-                      <option value="SS304L (Standard sanitary)">SS304L (Hygienic standard)</option>
-                      <option value="SS316 (Acid Resistant)">SS316 (Chemical grade)</option>
-                      <option value="SS304 (General use)">SS304 (Corrosion resistant)</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Batch Qty (pcs)</label>
-                    <input
-                      type="number"
-                      min="10"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 0))}
-                      className="w-16 bg-slate-950 border border-slate-800 text-slate-300 rounded p-1 text-xs focus:outline-none focus:border-blue-500 font-mono text-center"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-slate-400 text-[11px] leading-relaxed max-w-xs text-right sm:text-left self-end">
-                  <span className="text-emerald-400 font-bold block mb-0.5">● Dynamic Engineering Hook</span>
-                  Select pre-configured BS 4825-2 products to bundle direct into the active quotation cart seamlessly.
-                </div>
               </div>
 
             </div>

@@ -28,12 +28,70 @@ import {
 export default function App() {
   const [activeSection, setActiveSection] = useState('home');
 
+  // Contact Form state variables
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSending, setContactSending] = useState(false);
+  const [contactError, setContactError] = useState('');
+  const [contactSuccess, setContactSuccess] = useState(false);
+
   // Nav scroll handler
   const handleNavigate = (sectionId: string) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactError('');
+    setContactSuccess(false);
+
+    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
+      setContactError('Please fill in all mandatory fields (Name, Email, and Message).');
+      return;
+    }
+
+    setContactSending(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: contactName.trim(),
+          email: contactEmail.trim(),
+          phone: contactPhone.trim(),
+          subject: contactSubject.trim(),
+          message: contactMessage.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setContactSuccess(true);
+        // Clear fields
+        setContactName('');
+        setContactEmail('');
+        setContactPhone('');
+        setContactSubject('');
+        setContactMessage('');
+      } else {
+        setContactError(data.error || 'Failed to dispatch your messages. Please check your network and try again.');
+      }
+    } catch (err: any) {
+      console.error('Inquiry submission error:', err);
+      setContactError('A network error occurred. Please verify your connection or use direct mailto link below.');
+    } finally {
+      setContactSending(false);
     }
   };
 
@@ -358,45 +416,188 @@ export default function App() {
         {/* Contact Us Deck precisely matches requirements */}
         <section id="contact" className="py-20 bg-slate-950 text-white border-t border-slate-900 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/20 to-slate-900 rounded-3xl border border-blue-500/20 px-6 py-12 sm:p-12 text-center max-w-4xl mx-auto space-y-6">
-              
+            <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
               <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400 mb-2">
                 <Mail className="w-6 h-6 animate-bounce" />
               </div>
-
-              <h2 className="text-3xl font-extrabold tracking-tight">Ready to Request a Live Quotation?</h2>
-              
-              <p className="text-slate-300 text-sm max-w-xl mx-auto leading-relaxed">
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Ready to Request a Live Quotation?</h2>
+              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
                 Looking for SS Tees, Elbows, Bends, Reducers, or Custom SS Fittings?
-                Contact Sindo Engineering today for custom pricing, specifications, and fast commercial quotations.
+                Submit your project parameters directly below, or contact Sindo Engineering sales at your convenience.
               </p>
+            </div>
 
-              <div className="max-w-2xl mx-auto space-y-4 pt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs font-mono">
-                  <a 
-                    href="tel:+918698736598" 
-                    className="bg-white hover:bg-slate-100 text-slate-900 p-3.5 rounded-xl block font-bold transition-all shadow shadow-white/5"
-                  >
-                    Call: +91 86987 36598
-                  </a>
-                  <a 
-                    href="tel:+918999293882" 
-                    className="bg-white hover:bg-slate-100 text-slate-900 p-3.5 rounded-xl block font-bold transition-all shadow shadow-white/5"
-                  >
-                    Call: +91 89992 93882
-                  </a>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto">
+              
+              {/* Left Column: Direct Contact Details */}
+              <div className="lg:col-span-5 space-y-6 flex flex-col justify-start">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                  <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">Direct Contact Channels</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-xs uppercase tracking-wider text-slate-500 font-mono block mb-1">Commercial Sales Hotline</span>
+                      <div className="grid grid-cols-1 gap-2">
+                        <a 
+                          href="tel:+918698736598" 
+                          className="bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white p-3 rounded-xl block font-bold transition-all text-sm font-mono flex items-center gap-2"
+                        >
+                          <Phone className="w-4 h-4 text-emerald-400" />
+                          +91 86987 36598
+                        </a>
+                        <a 
+                          href="tel:+918999293882" 
+                          className="bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white p-3 rounded-xl block font-bold transition-all text-sm font-mono flex items-center gap-2"
+                        >
+                          <Phone className="w-4 h-4 text-emerald-400" />
+                          +91 89992 93882
+                        </a>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs uppercase tracking-wider text-slate-500 font-mono block mb-1">Direct Sales Email</span>
+                      <a 
+                        href="mailto:sindoengineering@gmail.com" 
+                        className="bg-blue-950/40 hover:bg-blue-900/40 border border-blue-900/50 hover:border-blue-800 text-blue-400 p-3.5 rounded-xl block font-bold transition-all text-sm font-mono flex items-center gap-2.5 break-all"
+                      >
+                        <Mail className="w-4.5 h-4.5 text-blue-400 animate-pulse" />
+                        sindoengineering@gmail.com
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl text-xs text-slate-400 leading-relaxed space-y-2">
+                    <p className="font-semibold text-slate-300">💡 Browser Settings Tip:</p>
+                    <p>
+                      Clicking our email address will attempt to open your computer's default email handler (e.g. Outlook or Apple Mail).
+                    </p>
+                    <p className="text-blue-400 font-medium">
+                      If your default email is not configured or fails to launch, please fill out the form on the right. Your message is dispatched securely and instantly!
+                    </p>
+                  </div>
                 </div>
-                <div className="max-w-xs sm:max-w-md mx-auto">
-                  <a 
-                    href="mailto:sindoengineering@gmail.com" 
-                    className="bg-slate-900 hover:bg-slate-800 text-blue-400 p-3.5 rounded-xl block font-bold transition-all border border-slate-800 text-xs font-mono"
-                  >
-                    Email: sindoengineering@gmail.com
-                  </a>
+
+                <div className="p-6 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-2xl border border-blue-500/10 space-y-3">
+                  <span className="text-emerald-400 font-mono text-[10px] uppercase font-bold block">✓ Secure Delivery Guarantee</span>
+                  <p className="text-xs text-slate-300 leading-normal">
+                    All forms sent through our client hub automatically deliver carbon-copies to our senior engineers to guarantee structured response actiontimes under 2 hours.
+                  </p>
                 </div>
               </div>
 
+              {/* Right Column: Direct Message Mail Form */}
+              <div className="lg:col-span-7">
+                <form 
+                  onSubmit={handleContactSubmit}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4"
+                >
+                  <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">Send Direct Message</h3>
+                  
+                  {contactError && (
+                    <div className="bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl">
+                      {contactError}
+                    </div>
+                  )}
 
+                  {contactSuccess && (
+                    <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs p-4 rounded-xl space-y-1">
+                      <strong className="block text-emerald-400">✓ Message Dispatched Correctly!</strong>
+                      <p className="text-slate-300">
+                        Sindo's sales team has received your message. We have sent a copy directly to <strong className="text-white">sindoengineering@gmail.com</strong>.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Your Full Name <span className="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        required
+                        value={contactName}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Email Address <span className="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="email" 
+                        required
+                        value={contactEmail}
+                        onChange={(e) => setContactEmail(e.target.value)}
+                        placeholder="john@company.com"
+                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Phone Number (Optional)
+                      </label>
+                      <input 
+                        type="tel" 
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        placeholder="e.g. +91 98765 43210"
+                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Subject / Topic
+                      </label>
+                      <input 
+                        type="text" 
+                        value={contactSubject}
+                        onChange={(e) => setContactSubject(e.target.value)}
+                        placeholder="e.g., Custom fitting pricing, catalogs"
+                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Your Message Details <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea 
+                      required
+                      rows={4}
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      placeholder="Type your questions or specific sizing requests here..."
+                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans leading-relaxed resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={contactSending}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 text-white font-bold text-xs py-3 rounded-lg text-center uppercase tracking-wider transition-all cursor-pointer shadow-lg active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                    {contactSending ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Sending Message...
+                      </>
+                    ) : (
+                      "Send Message Securely"
+                    )}
+                  </button>
+
+                </form>
+              </div>
 
             </div>
           </div>

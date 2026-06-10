@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { Product } from '../types';
 import { PRODUCTS } from '../data';
-import { Search, Info, Plus, Check, SlidersHorizontal, ChevronRight, X } from 'lucide-react';
+import { Search, SlidersHorizontal } from 'lucide-react';
 
 interface ProductCatalogProps {}
 
 export default function ProductCatalog({}: ProductCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [activeDetailsProduct, setActiveDetailsProduct] = useState<Product | null>(null);
 
   const categories = ['All', 'Tee', 'Elbow & Bend', 'Reducer', 'Other', 'Custom'];
 
@@ -18,10 +16,6 @@ export default function ProductCatalog({}: ProductCatalogProps) {
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const handleOpenDetails = (product: Product) => {
-    setActiveDetailsProduct(product);
-  };
 
   return (
     <section id="products" className="py-24 bg-slate-50 border-t border-slate-200">
@@ -120,16 +114,6 @@ export default function ProductCatalog({}: ProductCatalogProps) {
                         </span>
                       </div>
                     </div>
-
-                    {/* Action buttons */}
-                    <div className="mt-6 pt-4 border-t border-slate-100">
-                      <button
-                        onClick={() => handleOpenDetails(product)}
-                        className="w-full bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-all text-center uppercase tracking-wider cursor-pointer"
-                      >
-                        <Info className="w-4 h-4" /> View Technical Specifications
-                      </button>
-                    </div>
                   </div>
                 </div>
               );
@@ -138,92 +122,6 @@ export default function ProductCatalog({}: ProductCatalogProps) {
         )}
 
       </div>
-
-      {/* Technical Specifications Modal & Quick Quote Form */}
-      {activeDetailsProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col p-6 sm:p-8 animate-in zoom-in-95 duration-200 relative">
-            
-            {/* Modal Header */}
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4 mb-5">
-              <div>
-                <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase bg-slate-100 px-2.5 py-1 rounded">
-                  {activeDetailsProduct.category} Catalog Item
-                </span>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">{activeDetailsProduct.name}</h3>
-              </div>
-              <button
-                onClick={() => setActiveDetailsProduct(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="space-y-6 flex-1 text-slate-700">
-              
-              {/* Product Intro & Features */}
-              <div>
-                <h4 className="font-semibold text-sm text-slate-800 uppercase tracking-wider mb-2">Description</h4>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  {activeDetailsProduct.longDescription}
-                </p>
-                
-                <h4 className="font-semibold text-sm text-slate-800 uppercase tracking-wider mt-4 mb-2">Key Quality Features</h4>
-                <ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
-                  {activeDetailsProduct.features.map((feat, index) => (
-                    <li key={index}>{feat}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Technical Specifications Block */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 space-y-3">
-                <h4 className="font-bold text-sm text-slate-900 border-b border-slate-200 pb-2 flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-                  Engineering Specifications
-                </h4>
-                <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs font-sans">
-                  <div className="col-span-2">
-                    <span className="text-slate-400 block mb-0.5">Size range</span>
-                    <span className="font-bold text-slate-800">{activeDetailsProduct.specifications.sizeRange}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-slate-400 block mb-0.5">Steel Material Grades available</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {activeDetailsProduct.specifications.grades.map((grd) => (
-                        <span key={grd} className="bg-white border border-slate-200 text-slate-700 font-mono text-[10px] px-2 py-0.5 rounded">
-                          {grd}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-slate-400 block mb-0.5">Compliance standards</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1 text-[11px] font-semibold text-blue-700 bg-blue-50/50 px-2 py-1.5 rounded">
-                      {activeDetailsProduct.specifications.standards.join(' | ')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simple Close Button */}
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <button
-                  onClick={() => setActiveDetailsProduct(null)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-6 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
-                >
-                  Close Specification
-                </button>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </section>
   );
 }

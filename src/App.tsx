@@ -467,22 +467,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl text-xs text-slate-400 leading-relaxed space-y-2">
-                    <p className="font-semibold text-slate-300">💡 Browser Settings Tip:</p>
-                    <p>
-                      Clicking our email address will attempt to open your computer's default email handler (e.g. Outlook or Apple Mail).
-                    </p>
-                    <p className="text-blue-400 font-medium">
-                      If your default email is not configured or fails to launch, please fill out the form on the right. Your message is dispatched securely and instantly!
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-2xl border border-blue-500/10 space-y-3">
-                  <span className="text-emerald-400 font-mono text-[10px] uppercase font-bold block">✓ Secure Delivery Guarantee</span>
-                  <p className="text-xs text-slate-300 leading-normal">
-                    All forms sent through our client hub automatically deliver carbon-copies to our senior engineers to guarantee structured response actiontimes under 2 hours.
-                  </p>
                 </div>
               </div>
 
